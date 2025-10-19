@@ -28,7 +28,7 @@ export type TranscribeWithHuggingFaceOutput = z.infer<
   typeof TranscribeWithHuggingFaceOutputSchema
 >;
 
-const MODEL_URL = 'https://api-inference.huggingface.co/models/jmaczan/wav2vec2-base-dysarthric-torgo';
+const MODEL_URL = 'https://api-inference.huggingface.co/models/jmaczan/wav2vec2-large-xls-r-300m-dysarthria-big-dataset';
 
 export async function transcribeWithHuggingFace(
   input: TranscribeWithHuggingFaceInput
