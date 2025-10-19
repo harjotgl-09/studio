@@ -215,21 +215,24 @@ export default function Home() {
               </div>
               
               {audioUrl && (
-                <div className="w-full flex items-center gap-2">
+                <div className="w-full flex items-center justify-center gap-2 p-2 bg-muted/50 rounded-lg">
                     <Button onClick={handlePlayRecording} variant="outline" size="icon" disabled={isRecording || !isAudioPlayable}>
                         <Play />
                     </Button>
-                    <div className="w-full bg-muted rounded-full h-2 flex items-center justify-center">
-                       <p className="text-sm text-muted-foreground">{isAudioPlayable ? "Your recording is ready" : "Loading recording..."}</p>
-                    </div>
+                    <p className="text-sm text-muted-foreground flex-1 text-center">
+                        {isAudioPlayable ? "Your recording is ready" : "Loading recording..."}
+                    </p>
                 </div>
               )}
-              <audio 
-                  ref={audioPlayerRef}
-                  src={audioUrl || undefined}
-                  onCanPlay={() => setIsAudioPlayable(true)}
-                  className="hidden"
-              />
+              {audioUrl && (
+                <audio 
+                    key={audioUrl}
+                    ref={audioPlayerRef}
+                    src={audioUrl}
+                    onCanPlay={() => setIsAudioPlayable(true)}
+                    className="hidden"
+                />
+              )}
 
               <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card>
