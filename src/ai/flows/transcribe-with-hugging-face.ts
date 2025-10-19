@@ -1,37 +1,42 @@
 'use server';
 
 /**
- * @fileOverview Calls a Hugging Face endpoint to synthesize audio from text.
+ * @fileOverview Calls a Hugging Face endpoint to transcribe an audio recording.
  *
- * - synthesizeSpeechWithHuggingFace - a function that sends text data to the Hugging Face Inference API.
- * - SynthesizeSpeechInput - The input type for the function.
- * - SynthesizeSpeechOutput - The return type for the function.
+ * - transcribeWithHuggingFace - a function that sends audio data to the Hugging Face Inference API.
+ * - TranscribeWithHuggingFaceInput - The input type for the function.
+ * - TranscribeWithHuggingFaceOutput - The return type for the function.
  */
 
 import { z } from 'zod';
 
-const SynthesizeSpeechInputSchema = z.object({
-  text: z.string().describe('The text to synthesize into speech.'),
-});
-export type SynthesizeSpeechInput = z.infer<
-  typeof SynthesizeSpeechInputSchema
->;
-
-const SynthesizeSpeechOutputSchema = z.object({
+const TranscribeWithHuggingFaceInputSchema = z.object({
   audioDataUri: z
     .string()
-    .describe('The synthesized audio as a data URI.'),
+    .describe(
+      "The audio recording as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+    ),
 });
-export type SynthesizeSpeechOutput = z.infer<
-  typeof SynthesizeSpeechOutputSchema
+export type TranscribeWithHuggingFaceInput = z.infer<
+  typeof TranscribeWithHuggingFaceInputSchema
 >;
 
-const MODEL_URL = 'https://aunedt9dpzdps14i.us-east-1.aws.endpoints.huggingface.cloud';
+const TranscribeWithHuggingFaceOutputSchema = z.object({
+  transcription: z
+    .string()
+    .describe('The transcribed text from the audio recording.'),
+});
+export type TranscribeWithHuggingFaceOutput = z.infer<
+  typeof TranscribeWithHuggingFaceOutputSchema
+>;
 
-export async function synthesizeSpeechWithHuggingFace(
-  input: SynthesizeSpeechInput
-): Promise<SynthesizeSpeechOutput> {
-  const { text } = input;
+const MODEL_URL =
+  'https://api-inference.huggingface.co/models/openai/whisper-large-v3';
+
+export async function transcribeWithHuggingFace(
+  input: TranscribeWithHuggingFaceInput
+): Promise<TranscribeWithHuggingFaceOutput> {
+  const { audioDataUri } = input;
 
   if (!process.env.HUGGING_FACE_API_TOKEN) {
     throw new Error(
@@ -39,32 +44,30 @@ export async function synthesizeSpeechWithHuggingFace(
     );
   }
 
+  // Convert data URI to Blob
+  const fetchResponse = await fetch(audioDataUri);
+  const audioBlob = await fetchResponse.blob();
+
   const response = await fetch(MODEL_URL, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${process.env.HUGGING_FACE_API_TOKEN}`,
-      'Content-Type': 'application/json',
+      'Content-Type': audioBlob.type,
     },
-    body: JSON.stringify({ inputs: text }),
+    body: audioBlob,
   });
 
   if (!response.ok) {
     const errorBody = await response.text();
     console.error('Hugging Face API Error:', errorBody);
-    throw new Error(`Failed to synthesize audio. Status: ${response.status}. Body: ${errorBody}`);
+    throw new Error(
+      `Failed to transcribe audio. Status: ${response.status}. Body: ${errorBody}`
+    );
   }
 
-  const audioBlob = await response.blob();
+  const result = await response.json();
   
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      resolve({ audioDataUri: reader.result as string });
-    };
-    reader.onerror = (error) => {
-        console.error("FileReader error:", error);
-        reject(new Error("Failed to read the synthesized audio data."));
-    };
-    reader.readAsDataURL(audioBlob);
-  });
+  const transcription = result.text || '';
+
+  return { transcription };
 }
