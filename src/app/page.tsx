@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mic, Square, Loader2, Play } from 'lucide-react';
+import { Mic, Square, Loader2, Play, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/header';
 import { transcribeWithHuggingFace } from '@/ai/flows/transcribe-with-hugging-face';
@@ -13,6 +13,7 @@ export default function Home() {
   const [browserTranscription, setBrowserTranscription] = useState('');
   const [aiTranscription, setAiTranscription] = useState('');
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [transcriptionError, setTranscriptionError] = useState<string | null>(null);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -70,6 +71,7 @@ export default function Home() {
       setIsRecording(true);
       setBrowserTranscription('');
       setAiTranscription('');
+      setTranscriptionError(null);
 
       if (recognitionRef.current) {
         recognitionRef.current.start();
@@ -107,6 +109,7 @@ export default function Home() {
 
     setIsTranscribing(true);
     setAiTranscription('');
+    setTranscriptionError(null);
 
     try {
       const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
@@ -120,6 +123,7 @@ export default function Home() {
         } catch (error: any) {
            console.error('Error in transcription flow:', error);
            const errorMessage = error.message || "An unknown error occurred during transcription.";
+           setTranscriptionError(errorMessage);
            toast({
              variant: "destructive",
              title: "Transcription Failed",
@@ -195,7 +199,15 @@ export default function Home() {
                   </CardHeader>
                   <CardContent className="min-h-[100px] text-foreground font-semibold">
                     {isTranscribing && <div className="text-muted-foreground">Transcribing...</div>}
-                    {aiTranscription || "AI transcription result will appear here."}
+                    {aiTranscription}
+                    {transcriptionError && (
+                       <div className="text-destructive flex flex-col items-center text-center gap-2 p-4 rounded-md border border-destructive/50 bg-destructive/10">
+                         <AlertTriangle className="w-8 h-8" />
+                         <h3 className="font-bold">Configuration Error</h3>
+                         <p className="text-sm font-normal">{transcriptionError}</p>
+                       </div>
+                    )}
+                    {!aiTranscription && !isTranscribing && !transcriptionError && <div className="text-muted-foreground font-normal">AI transcription result will appear here.</div>}
                   </CardContent>
                 </Card>
               </div>
