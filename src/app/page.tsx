@@ -72,13 +72,14 @@ export default function Home() {
       };
 
       mediaRecorderRef.current.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        // Revoke the old URL if it exists
-        if (audioUrl) {
-            URL.revokeObjectURL(audioUrl);
-        }
-        const newAudioUrl = URL.createObjectURL(audioBlob);
-        setAudioUrl(newAudioUrl);
+        setTimeout(() => {
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          if (audioUrl) {
+              URL.revokeObjectURL(audioUrl);
+          }
+          const newAudioUrl = URL.createObjectURL(audioBlob);
+          setAudioUrl(newAudioUrl);
+        }, 1000); // 1-second delay as requested
       };
       
       mediaRecorderRef.current.start();
