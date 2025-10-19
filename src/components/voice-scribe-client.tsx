@@ -1,22 +1,22 @@
 
 "use client";
 
-import { transcribeWithHuggingFace } from "@/ai/flows/transcribe-with-hugging-face";
+import { synthesizeSpeechWithHuggingFace } from "@/ai/flows/transcribe-with-hugging-face";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Check, Copy, LoaderCircle, Mic, Play, RefreshCw, Square, Sparkles, Voicemail } from "lucide-react";
+import { Check, Copy, LoaderCircle, Mic, Play, RefreshCw, Square, Sparkles, Voicemail, WandSparkles } from "lucide-react";
 import { useEffect, useRef, useState, type FC } from "react";
 
-type Status = "initial" | "recording" | "processing" | "success" | "improving" | "error";
+type Status = "initial" | "recording" | "processing" | "success" | "synthesizing" | "error";
 
 export const VoiceScribeClient: FC = () => {
   const [status, setStatus] = useState<Status>("initial");
   const [transcription, setTranscription] = useState<string>("");
-  const [audioURL, setAudioURL] = useState<string>("");
+  const [originalAudioURL, setOriginalAudioURL] = useState<string>("");
+  const [synthesizedAudioURL, setSynthesizedAudioURL] = useState<string>("");
   const [isCopied, setIsCopied] = useState(false);
-  const [audioDataUri, setAudioDataUri] = useState<string>('');
   const [initialTranscription, setInitialTranscription] = useState("");
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -59,13 +59,13 @@ export const VoiceScribeClient: FC = () => {
 
     setTranscription("");
     setInitialTranscription("");
-    setAudioURL("");
-    setAudioDataUri("");
+    setOriginalAudioURL("");
+    setSynthesizedAudioURL("");
     setStatus("recording");
     
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream);
+      mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'audio/webm' });
       audioChunksRef.current = [];
 
       recognitionRef.current = new SpeechRecognition();
@@ -113,15 +113,9 @@ export const VoiceScribeClient: FC = () => {
       mediaRecorderRef.current.onstop = () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
         const audioUrl = URL.createObjectURL(audioBlob);
-        setAudioURL(audioUrl);
+        setOriginalAudioURL(audioUrl);
         
-        const reader = new FileReader();
-        reader.readAsDataURL(audioBlob);
-        reader.onloadend = () => {
-            const base64data = reader.result as string;
-            setAudioDataUri(base64data);
-            setStatus("processing"); // Go to processing to show the initial transcription first
-        };
+        setStatus("processing"); 
 
         const finalFinalTranscript = finalTranscript.trim();
         setInitialTranscription(finalFinalTranscript);
@@ -149,10 +143,9 @@ export const VoiceScribeClient: FC = () => {
     if (recognitionRef.current) {
         recognitionRef.current.stop();
     }
-    // setStatus("processing"); // Status is set in onstop
   };
 
-  const handlePlayTranscription = (text: string) => {
+  const handlePlayBrowserTTS = (text: string) => {
     if ('speechSynthesis' in window && text) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
@@ -170,39 +163,39 @@ export const VoiceScribeClient: FC = () => {
     setStatus("initial");
     setTranscription("");
     setInitialTranscription("");
-    setAudioURL("");
-    setAudioDataUri("");
+    setOriginalAudioURL("");
+    setSynthesizedAudioURL("");
     if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
   };
 
-  const handleImproveTranscription = async () => {
-    if (!audioDataUri) return;
-    setStatus('improving');
+  const handleSynthesize = async () => {
+    if (!transcription) return;
+    setStatus('synthesizing');
     try {
-      const result = await transcribeWithHuggingFace({ audioDataUri });
-      setTranscription(result.transcription);
+      const result = await synthesizeSpeechWithHuggingFace({ text: transcription });
+      setSynthesizedAudioURL(result.audioDataUri);
       setStatus('success');
     } catch (e: any) {
       console.error(e);
       toast({
         variant: 'destructive',
-        title: 'Transcription Failed',
-        description: e.message || 'Could not transcribe audio.',
+        title: 'Speech Synthesis Failed',
+        description: e.message || 'Could not synthesize audio.',
       });
       setStatus('error');
     }
   };
   
-  const renderTranscribeButton = () => {
+  const renderSynthesizeButton = () => {
       return (
           <div className="flex flex-col items-center gap-4 mt-6">
-              <Button onClick={handleImproveTranscription} size="lg">
-                  <Sparkles className="mr-2" />
-                  Transcribe with AI
+              <Button onClick={handleSynthesize} size="lg">
+                  <WandSparkles className="mr-2" />
+                  Synthesize with AI
               </Button>
-               <p className="text-sm text-muted-foreground">Improve the browser's transcription with a specialized AI model.</p>
+               <p className="text-sm text-muted-foreground">Use an AI model to read the text aloud.</p>
           </div>
       )
   }
@@ -246,7 +239,7 @@ export const VoiceScribeClient: FC = () => {
             <CardHeader>
               <CardTitle className="font-headline">Initial Transcription</CardTitle>
               <CardDescription>
-                This is the transcription from your browser. You can now improve it with AI.
+                This is the transcription from your browser. You can now use an AI to synthesize it into speech.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -263,42 +256,51 @@ export const VoiceScribeClient: FC = () => {
               </div>
             </CardContent>
             <CardFooter className="flex flex-col items-center justify-center gap-4">
-               {renderTranscribeButton()}
+               {renderSynthesizeButton()}
                <Button variant="outline" onClick={handleReset}>
                 <RefreshCw size={16} className="mr-2" /> Record New
               </Button>
             </CardFooter>
           </Card>
         );
-      case "improving":
+      case "synthesizing":
         return (
           <div className="text-center flex flex-col items-center gap-4">
              <LoaderCircle size={64} className="text-primary animate-spin" />
-             <h2 className="text-2xl font-semibold font-headline">Transcribing with AI...</h2>
-             <p className="text-muted-foreground">Using the advanced model to refine your transcription.</p>
+             <h2 className="text-2xl font-semibold font-headline">Synthesizing Audio...</h2>
+             <p className="text-muted-foreground">The AI model is generating the audio for you.</p>
           </div>
         );
       case "success":
         return (
           <Card className="w-full max-w-2xl shadow-lg">
             <CardHeader>
-              <CardTitle className="font-headline">Your Transcription</CardTitle>
+              <CardTitle className="font-headline">Playback</CardTitle>
               <CardDescription>
-                Review your transcription, play back the audio, or start over.
+                Review your original recording and listen to the AI-synthesized version.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="mt-4">
-                <audio src={audioURL} controls className="w-full" />
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                 <label className="text-sm font-medium text-muted-foreground">
+                    Your Original Recording
+                </label>
+                <audio src={originalAudioURL} controls className="w-full" />
+              </div>
+               <div className="space-y-2">
+                 <label className="text-sm font-medium text-muted-foreground">
+                    AI Synthesized Audio
+                </label>
+                <audio src={synthesizedAudioURL} controls className="w-full" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-muted-foreground">
-                    AI Transcription
+                    Transcription
                 </label>
                 <Textarea
                   readOnly
                   value={transcription}
-                  className="h-40 text-base bg-background"
+                  className="h-28 text-base bg-background"
                   aria-label="Transcription text"
                 />
               </div>
@@ -308,7 +310,7 @@ export const VoiceScribeClient: FC = () => {
                 <RefreshCw size={16} className="mr-2" /> Record New
               </Button>
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" onClick={() => handlePlayTranscription(transcription)} aria-label="Play transcription">
+                <Button variant="ghost" size="icon" onClick={() => handlePlayBrowserTTS(transcription)} aria-label="Play transcription with browser voice">
                   <Play />
                 </Button>
                 <Button variant="ghost" size="icon" onClick={() => handleCopy(transcription)} aria-label="Copy transcription">
