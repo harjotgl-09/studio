@@ -64,6 +64,7 @@ export async function transcribeWithHuggingFace(
   }
 
   const result = await response.json();
+  console.log('Hugging Face API Response:', JSON.stringify(result, null, 2));
   
   if (result.error) {
      throw new Error(`Hugging Face model error: ${result.error}`);
