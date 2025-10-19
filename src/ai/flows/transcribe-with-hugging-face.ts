@@ -28,7 +28,7 @@ export type TranscribeWithHuggingFaceOutput = z.infer<
   typeof TranscribeWithHuggingFaceOutputSchema
 >;
 
-const MODEL_URL = 'https://iyr9a23kqm3iv1xh.us-east-1.aws.endpoints.huggingface.cloud';
+const MODEL_URL = 'https://aunedt9dpzdps14i.us-east-1.aws.endpoints.huggingface.cloud';
 
 export async function transcribeWithHuggingFace(
   input: TranscribeWithHuggingFaceInput
