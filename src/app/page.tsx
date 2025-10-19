@@ -15,12 +15,12 @@ export default function Home() {
   const [aiTranscription, setAiTranscription] = useState('');
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [transcriptionError, setTranscriptionError] = useState<string | null>(null);
+  const [isAudioPlayable, setIsAudioPlayable] = useState(false);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const audioPlayerRef = useRef<HTMLAudioElement>(null);
-  const playButtonRef = useRef<HTMLButtonElement>(null);
 
   const { toast } = useToast();
 
@@ -64,13 +64,11 @@ export default function Home() {
 
   const handleStartRecording = async () => {
     setIsRecording(true);
+    setIsAudioPlayable(false);
     setBrowserTranscription('');
     setAiTranscription('');
     setTranscriptionError(null);
     setAudioUrl(null); 
-    if (playButtonRef.current) {
-        playButtonRef.current.disabled = true;
-    }
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -85,31 +83,6 @@ export default function Home() {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         const newAudioUrl = URL.createObjectURL(audioBlob);
         setAudioUrl(newAudioUrl);
-        
-        if (audioPlayerRef.current && playButtonRef.current) {
-            const player = audioPlayerRef.current;
-            const playButton = playButtonRef.current;
-
-            // Set the source of the audio player
-            player.src = newAudioUrl;
-
-            // Define the event listener function
-            const onCanPlay = () => {
-                // Enable the play button
-                playButton.disabled = false;
-                // Remove the event listener so it doesn't fire again
-                player.removeEventListener('canplay', onCanPlay);
-            };
-
-            // Attach the one-time event listener
-            player.addEventListener('canplay', onCanPlay);
-
-            // In case of error
-            player.onerror = () => {
-                console.error("Audio player error");
-                player.removeEventListener('canplay', onCanPlay);
-            };
-        }
       };
       
       mediaRecorderRef.current.start();
@@ -243,19 +216,23 @@ export default function Home() {
               
               {audioUrl && (
                 <div className="w-full flex items-center justify-center gap-2 p-2 bg-muted/50 rounded-lg">
-                    <Button ref={playButtonRef} onClick={handlePlayRecording} variant="outline" size="icon" disabled>
+                    <Button onClick={handlePlayRecording} variant="outline" size="icon" disabled={!isAudioPlayable}>
                         <Play />
                     </Button>
                     <p className="text-sm text-muted-foreground flex-1 text-center">
-                        Your recording is ready
+                        {isAudioPlayable ? "Your recording is ready" : "Loading audio..."}
                     </p>
                 </div>
               )}
-              {/* This audio element is now controlled directly for loading and playback */}
-              <audio 
+              {audioUrl && (
+                <audio 
                   ref={audioPlayerRef}
+                  key={audioUrl}
+                  src={audioUrl}
+                  onCanPlay={() => setIsAudioPlayable(true)}
                   className="hidden"
-              />
+                />
+              )}
 
               <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card>
