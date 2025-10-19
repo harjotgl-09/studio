@@ -70,6 +70,32 @@ export default function Home() {
           audioChunksRef.current.push(event.data);
         }
       };
+
+      mediaRecorderRef.current.onstop = () => {
+        const newAudioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        setAudioBlob(newAudioBlob);
+
+        // Convert blob to base64 data URI for reliable playback and transcription
+        const reader = new FileReader();
+        reader.readAsDataURL(newAudioBlob);
+        reader.onloadend = () => {
+          const base64Audio = reader.result as string;
+          setAudioUrl(base64Audio);
+        };
+        reader.onerror = () => {
+          console.error("FileReader error");
+          toast({
+              variant: "destructive",
+              title: "File Reading Error",
+              description: "Could not read the recorded audio data.",
+          });
+        };
+
+        // Clean up stream
+        if (mediaRecorderRef.current?.stream) {
+            mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+        }
+      };
       
       mediaRecorderRef.current.start();
       
@@ -90,17 +116,6 @@ export default function Home() {
 
   const handleStopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.onstop = () => {
-        const newAudioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        const newAudioUrl = URL.createObjectURL(newAudioBlob);
-        setAudioBlob(newAudioBlob);
-        setAudioUrl(newAudioUrl);
-        
-        // Clean up stream
-        if (mediaRecorderRef.current?.stream) {
-            mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
-        }
-      };
       mediaRecorderRef.current.stop();
       setIsRecording(false);
       if (recognitionRef.current) {
@@ -110,7 +125,7 @@ export default function Home() {
   };
   
   const handleTranscribe = async () => {
-    if (!audioBlob) {
+    if (!audioUrl) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -123,35 +138,22 @@ export default function Home() {
     setAiTranscription('');
     setTranscriptionError(null);
   
-    const reader = new FileReader();
-    reader.readAsDataURL(audioBlob);
-    reader.onloadend = async () => {
-      const base64Audio = reader.result as string;
-      try {
-        const result = await transcribeWithHuggingFace({ audioDataUri: base64Audio });
-        setAiTranscription(result);
-      } catch (error: any) {
-          console.error('Error in transcription flow:', error);
-          const errorMessage = error.message || "An unknown error occurred during transcription.";
-          setTranscriptionError(errorMessage);
-          toast({
-            variant: "destructive",
-            title: "Transcription Failed",
-            description: `There was a problem communicating with the AI model. ${errorMessage}`,
-          });
-      } finally {
-        setIsTranscribing(false);
-      }
-    };
-    reader.onerror = () => {
-        console.error("FileReader error");
+    try {
+      // audioUrl is already a base64 data URI
+      const result = await transcribeWithHuggingFace({ audioDataUri: audioUrl });
+      setAiTranscription(result);
+    } catch (error: any) {
+        console.error('Error in transcription flow:', error);
+        const errorMessage = error.message || "An unknown error occurred during transcription.";
+        setTranscriptionError(errorMessage);
         toast({
-            variant: "destructive",
-            title: "File Reading Error",
-            description: "Could not read the recorded audio data.",
+          variant: "destructive",
+          title: "Transcription Failed",
+          description: `There was a problem communicating with the AI model. ${errorMessage}`,
         });
-        setIsTranscribing(false);
-    };
+    } finally {
+      setIsTranscribing(false);
+    }
   };
   
   const handlePlayRecording = () => {
