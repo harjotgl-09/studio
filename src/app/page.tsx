@@ -15,12 +15,10 @@ export default function Home() {
   const [aiTranscription, setAiTranscription] = useState('');
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [transcriptionError, setTranscriptionError] = useState<string | null>(null);
-  const [isAudioPlayable, setIsAudioPlayable] = useState(false);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const audioPlayerRef = useRef<HTMLAudioElement>(null);
 
   const { toast } = useToast();
 
@@ -64,7 +62,6 @@ export default function Home() {
 
   const handleStartRecording = async () => {
     setIsRecording(true);
-    setIsAudioPlayable(false);
     setBrowserTranscription('');
     setAiTranscription('');
     setTranscriptionError(null);
@@ -160,9 +157,16 @@ export default function Home() {
   };
   
   const handlePlayRecording = () => {
-    if (audioPlayerRef.current) {
-      audioPlayerRef.current.currentTime = 0;
-      audioPlayerRef.current.play().catch(e => console.error("Playback error:", e));
+    if (audioUrl) {
+        const audio = new Audio(audioUrl);
+        audio.play().catch(e => {
+            console.error("Playback error:", e)
+            toast({
+                variant: 'destructive',
+                title: 'Playback Error',
+                description: 'Could not play the recorded audio.',
+            });
+        });
     }
   };
 
@@ -216,22 +220,13 @@ export default function Home() {
               
               {audioUrl && (
                 <div className="w-full flex items-center justify-center gap-2 p-2 bg-muted/50 rounded-lg">
-                    <Button onClick={handlePlayRecording} variant="outline" size="icon" disabled={!isAudioPlayable}>
+                    <Button onClick={handlePlayRecording} variant="outline" size="icon" disabled={isRecording}>
                         <Play />
                     </Button>
                     <p className="text-sm text-muted-foreground flex-1 text-center">
-                        {isAudioPlayable ? "Your recording is ready" : "Loading audio..."}
+                        Your recording is ready
                     </p>
                 </div>
-              )}
-              {audioUrl && (
-                <audio 
-                  ref={audioPlayerRef}
-                  key={audioUrl}
-                  src={audioUrl}
-                  onCanPlay={() => setIsAudioPlayable(true)}
-                  className="hidden"
-                />
               )}
 
               <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
