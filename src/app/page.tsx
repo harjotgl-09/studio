@@ -61,7 +61,16 @@ export default function Home() {
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream);
+      
+      const mimeTypes = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm'];
+      const supportedMimeType = mimeTypes.find(type => MediaRecorder.isTypeSupported(type));
+      
+      if (!supportedMimeType) {
+        throw new Error("No supported MIME type found for MediaRecorder");
+      }
+
+      const options = { mimeType: supportedMimeType };
+      mediaRecorderRef.current = new MediaRecorder(stream, options);
       
       mediaRecorderRef.current.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -70,7 +79,7 @@ export default function Home() {
       };
       
       mediaRecorderRef.current.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current);
+        const audioBlob = new Blob(audioChunksRef.current, { type: supportedMimeType });
         const reader = new FileReader();
         reader.readAsDataURL(audioBlob);
         reader.onloadend = () => {
