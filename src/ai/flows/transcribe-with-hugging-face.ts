@@ -52,7 +52,7 @@ export async function transcribeWithHuggingFace(
     method: 'POST',
     headers: {
       Authorization: `Bearer ${process.env.HUGGING_FACE_API_TOKEN}`,
-      'Content-Type': 'application/octet-stream',
+      'Content-Type': 'audio/webm',
     },
     body: audioBuffer,
   });
