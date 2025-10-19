@@ -53,7 +53,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    // Cleanup the object URL when the component unmounts
+    // Cleanup the object URL when the component unmounts or audioUrl changes
     return () => {
       if (audioUrl) {
         URL.revokeObjectURL(audioUrl);
@@ -63,6 +63,13 @@ export default function Home() {
 
 
   const handleStartRecording = async () => {
+    setIsRecording(true);
+    setBrowserTranscription('');
+    setAiTranscription('');
+    setTranscriptionError(null);
+    setAudioUrl(null); 
+    setIsAudioPlayable(false);
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream);
@@ -74,43 +81,19 @@ export default function Home() {
 
       mediaRecorderRef.current.onstop = () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        if (audioUrl) {
-            URL.revokeObjectURL(audioUrl);
-        }
         const newAudioUrl = URL.createObjectURL(audioBlob);
         setAudioUrl(newAudioUrl);
-        
-        if (audioPlayerRef.current) {
-          const audioPlayer = audioPlayerRef.current;
-          
-          const onCanPlay = () => {
-            setIsAudioPlayable(true);
-            audioPlayer.removeEventListener('canplay', onCanPlay);
-          };
-
-          audioPlayer.addEventListener('canplay', onCanPlay);
-          audioPlayer.src = newAudioUrl;
-          audioPlayer.load();
-        }
       };
       
       mediaRecorderRef.current.start();
-      setIsRecording(true);
-      setBrowserTranscription('');
-      setAiTranscription('');
-      setTranscriptionError(null);
-      if (audioUrl) {
-        URL.revokeObjectURL(audioUrl);
-      }
-      setAudioUrl(null); 
-      setIsAudioPlayable(false);
-
+      
       if (recognitionRef.current) {
         recognitionRef.current.start();
       }
 
     } catch (error) {
       console.error('Error starting recording:', error);
+      setIsRecording(false);
       toast({
         variant: "destructive",
         title: "Error",
@@ -130,7 +113,7 @@ export default function Home() {
   };
   
   const handleTranscribe = async () => {
-    if (audioChunksRef.current.length === 0) {
+    if (!audioUrl) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -243,6 +226,8 @@ export default function Home() {
               )}
               <audio 
                   ref={audioPlayerRef}
+                  src={audioUrl || ''}
+                  onCanPlay={() => setIsAudioPlayable(true)}
                   className="hidden"
               />
 
