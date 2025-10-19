@@ -67,6 +67,7 @@ export default function Home() {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         const audioUrl = URL.createObjectURL(audioBlob);
         setAudioUrl(audioUrl);
+        audioRef.current = new Audio(audioUrl);
       };
       
       mediaRecorderRef.current.start();
@@ -74,6 +75,12 @@ export default function Home() {
       setBrowserTranscription('');
       setAiTranscription('');
       setTranscriptionError(null);
+      setAudioUrl(null);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+
 
       if (recognitionRef.current) {
         recognitionRef.current.start();
@@ -201,12 +208,11 @@ export default function Home() {
               
               {audioUrl && (
                 <div className="w-full flex items-center gap-2">
-                    <audio src={audioUrl} ref={audioRef} />
                     <Button onClick={handlePlayRecording} variant="outline" size="icon">
                         <Play />
                     </Button>
-                    <div className="w-full bg-muted rounded-full h-2">
-                       <p className="text-sm text-muted-foreground w-full text-center">Your recording</p>
+                    <div className="w-full bg-muted rounded-full h-2 flex items-center justify-center">
+                       <p className="text-sm text-muted-foreground">Your recording</p>
                     </div>
                 </div>
               )}
