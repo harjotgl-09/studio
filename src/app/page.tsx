@@ -15,11 +15,12 @@ export default function Home() {
   const [aiTranscription, setAiTranscription] = useState('');
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [transcriptionError, setTranscriptionError] = useState<string | null>(null);
+  const [isAudioPlayable, setIsAudioPlayable] = useState(false);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const audioPlayerRef = useRef<HTMLAudioElement>(null);
 
   const { toast } = useToast();
 
@@ -72,14 +73,12 @@ export default function Home() {
       };
 
       mediaRecorderRef.current.onstop = () => {
-        setTimeout(() => {
-          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-          if (audioUrl) {
-              URL.revokeObjectURL(audioUrl);
-          }
-          const newAudioUrl = URL.createObjectURL(audioBlob);
-          setAudioUrl(newAudioUrl);
-        }, 1000); // 1-second delay as requested
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        if (audioUrl) {
+            URL.revokeObjectURL(audioUrl);
+        }
+        const newAudioUrl = URL.createObjectURL(audioBlob);
+        setAudioUrl(newAudioUrl);
       };
       
       mediaRecorderRef.current.start();
@@ -91,6 +90,7 @@ export default function Home() {
         URL.revokeObjectURL(audioUrl);
       }
       setAudioUrl(null); 
+      setIsAudioPlayable(false);
 
       if (recognitionRef.current) {
         recognitionRef.current.start();
@@ -164,9 +164,9 @@ export default function Home() {
   };
   
   const handlePlayRecording = () => {
-    if (audioUrl) {
-      const audio = new Audio(audioUrl);
-      audio.play().catch(e => console.error("Playback error:", e));
+    if (audioPlayerRef.current && isAudioPlayable) {
+      audioPlayerRef.current.currentTime = 0;
+      audioPlayerRef.current.play().catch(e => console.error("Playback error:", e));
     }
   };
 
@@ -220,12 +220,19 @@ export default function Home() {
               
               {audioUrl && (
                 <div className="w-full flex items-center gap-2">
-                    <Button onClick={handlePlayRecording} variant="outline" size="icon" disabled={isRecording}>
+                    <Button onClick={handlePlayRecording} variant="outline" size="icon" disabled={isRecording || !isAudioPlayable}>
                         <Play />
                     </Button>
                     <div className="w-full bg-muted rounded-full h-2 flex items-center justify-center">
-                       <p className="text-sm text-muted-foreground">Your recording</p>
+                       <p className="text-sm text-muted-foreground">{isAudioPlayable ? "Your recording is ready" : "Loading recording..."}</p>
                     </div>
+                    <audio 
+                      ref={audioPlayerRef} 
+                      src={audioUrl} 
+                      onCanPlay={() => setIsAudioPlayable(true)}
+                      onEmptied={() => setIsAudioPlayable(false)}
+                      className="hidden"
+                    />
                 </div>
               )}
 
