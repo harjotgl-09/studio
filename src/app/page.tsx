@@ -55,7 +55,7 @@ export default function Home() {
             URL.revokeObjectURL(audioUrl);
         }
     };
-  }, []);
+  }, [audioUrl]);
 
 
   const handleStartRecording = async () => {
@@ -65,8 +65,8 @@ export default function Home() {
     setTranscriptionError(null);
     if (audioUrl) {
       URL.revokeObjectURL(audioUrl);
+      setAudioUrl(null); 
     }
-    setAudioUrl(null); 
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -125,7 +125,8 @@ export default function Home() {
     setTranscriptionError(null);
 
     try {
-      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+      // Fetch blob from URL to ensure it's available
+      const audioBlob = await fetch(audioUrl).then(res => res.blob());
       const reader = new FileReader();
       reader.readAsDataURL(audioBlob);
       reader.onloadend = async () => {
