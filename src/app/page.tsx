@@ -18,7 +18,7 @@ export default function Home() {
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioPlayerRef = useRef<HTMLAudioElement>(null); // Ref for the <audio> element
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
@@ -52,20 +52,9 @@ export default function Home() {
     }
   }, []);
 
-  // Effect to handle audio object creation and cleanup
   useEffect(() => {
-    if (audioUrl) {
-      audioRef.current = new Audio(audioUrl);
-    }
-
-    // Cleanup function
+    // Cleanup the object URL when the component unmounts
     return () => {
-      // Pause and release the old audio object
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-      // Revoke the old URL to prevent memory leaks
       if (audioUrl) {
         URL.revokeObjectURL(audioUrl);
       }
@@ -85,6 +74,10 @@ export default function Home() {
 
       mediaRecorderRef.current.onstop = () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        // Revoke the old URL if it exists
+        if (audioUrl) {
+            URL.revokeObjectURL(audioUrl);
+        }
         const newAudioUrl = URL.createObjectURL(audioBlob);
         setAudioUrl(newAudioUrl);
       };
@@ -94,7 +87,7 @@ export default function Home() {
       setBrowserTranscription('');
       setAiTranscription('');
       setTranscriptionError(null);
-      setAudioUrl(null); // This will trigger the useEffect cleanup for the old audio
+      setAudioUrl(null); 
 
       if (recognitionRef.current) {
         recognitionRef.current.start();
@@ -168,9 +161,9 @@ export default function Home() {
   };
   
   const handlePlayRecording = () => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play();
+    if (audioPlayerRef.current) {
+      audioPlayerRef.current.currentTime = 0;
+      audioPlayerRef.current.play().catch(e => console.error("Playback error:", e));
     }
   };
 
@@ -230,6 +223,7 @@ export default function Home() {
                     <div className="w-full bg-muted rounded-full h-2 flex items-center justify-center">
                        <p className="text-sm text-muted-foreground">Your recording</p>
                     </div>
+                    <audio ref={audioPlayerRef} src={audioUrl} className="hidden" />
                 </div>
               )}
 
