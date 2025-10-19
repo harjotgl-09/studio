@@ -50,13 +50,22 @@ export default function Home() {
         console.warn("SpeechRecognition API not supported in this browser.");
       }
     }
+  }, []);
 
-    // Cleanup audio object on component unmount
+  // Effect to handle audio object creation and cleanup
+  useEffect(() => {
+    if (audioUrl) {
+      audioRef.current = new Audio(audioUrl);
+    }
+
+    // Cleanup function
     return () => {
+      // Pause and release the old audio object
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current = null;
       }
+      // Revoke the old URL to prevent memory leaks
       if (audioUrl) {
         URL.revokeObjectURL(audioUrl);
       }
@@ -85,16 +94,7 @@ export default function Home() {
       setBrowserTranscription('');
       setAiTranscription('');
       setTranscriptionError(null);
-      
-      if(audioUrl) {
-        URL.revokeObjectURL(audioUrl);
-      }
-      setAudioUrl(null);
-      
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
+      setAudioUrl(null); // This will trigger the useEffect cleanup for the old audio
 
       if (recognitionRef.current) {
         recognitionRef.current.start();
@@ -168,13 +168,9 @@ export default function Home() {
   };
   
   const handlePlayRecording = () => {
-    if (audioUrl) {
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
-      const audio = new Audio(audioUrl);
-      audioRef.current = audio;
-      audio.play();
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play();
     }
   };
 
@@ -228,7 +224,7 @@ export default function Home() {
               
               {audioUrl && (
                 <div className="w-full flex items-center gap-2">
-                    <Button onClick={handlePlayRecording} variant="outline" size="icon">
+                    <Button onClick={handlePlayRecording} variant="outline" size="icon" disabled={isRecording}>
                         <Play />
                     </Button>
                     <div className="w-full bg-muted rounded-full h-2 flex items-center justify-center">
