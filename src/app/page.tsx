@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mic, Square, Loader2, Play, AlertTriangle } from 'lucide-react';
+import { Mic, Square, Loader2, Play, AlertTriangle, Volume2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/header';
 import { transcribeWithHuggingFace } from '@/ai/flows/transcribe-with-hugging-face';
@@ -18,6 +18,7 @@ export default function Home() {
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
@@ -145,6 +146,25 @@ export default function Home() {
     }
   };
   
+  const handlePlayRecording = () => {
+    if (audioRef.current) {
+      audioRef.current.play();
+    }
+  };
+
+  const handleReadAloud = (text: string) => {
+    if ('speechSynthesis' in window && text) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      window.speechSynthesis.speak(utterance);
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Unsupported',
+        description: 'Text-to-speech is not supported in your browser or there is no text to read.',
+      });
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header />
@@ -180,15 +200,29 @@ export default function Home() {
               </div>
               
               {audioUrl && (
-                <div className="w-full">
-                    <audio controls src={audioUrl} className="w-full" />
+                <div className="w-full flex items-center gap-2">
+                    <audio src={audioUrl} ref={audioRef} />
+                    <Button onClick={handlePlayRecording} variant="outline" size="icon">
+                        <Play />
+                    </Button>
+                    <div className="w-full bg-muted rounded-full h-2">
+                       <p className="text-sm text-muted-foreground w-full text-center">Your recording</p>
+                    </div>
                 </div>
               )}
 
               <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card>
-                  <CardHeader>
+                  <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle className="text-lg">Browser Transcription</CardTitle>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleReadAloud(browserTranscription)}
+                      disabled={!browserTranscription}
+                    >
+                      <Volume2 />
+                    </Button>
                   </CardHeader>
                   <CardContent className="h-[150px] text-muted-foreground">
                     <ScrollArea className="h-full w-full rounded-md border p-4">
@@ -197,8 +231,16 @@ export default function Home() {
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardHeader>
+                  <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle className="text-lg">AI Transcription</CardTitle>
+                     <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleReadAloud(aiTranscription)}
+                      disabled={!aiTranscription}
+                    >
+                      <Volume2 />
+                    </Button>
                   </CardHeader>
                   <CardContent className="h-[150px] text-foreground font-semibold">
                      <ScrollArea className="h-full w-full rounded-md border p-4">
