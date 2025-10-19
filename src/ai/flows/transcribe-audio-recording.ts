@@ -1,11 +1,8 @@
 'use server';
 
 /**
- * @fileOverview A flow for transcribing audio recordings to text.
- *
- * - transcribeAudio - A function that handles the audio transcription process.
- * - TranscribeAudioInput - The input type for the transcribeAudio function.
- * - TranscribeAudioOutput - The return type for the transcribeAudio function.
+ * @fileOverview This file is no longer used. The initial transcription is now handled by the browser's SpeechRecognition API.
+ * This file is kept to avoid breaking imports, but its functions are not called.
  */
 
 import {ai} from '@/ai/genkit';
@@ -26,7 +23,8 @@ const TranscribeAudioOutputSchema = z.object({
 export type TranscribeAudioOutput = z.infer<typeof TranscribeAudioOutputSchema>;
 
 export async function transcribeAudio(input: TranscribeAudioInput): Promise<TranscribeAudioOutput> {
-  return transcribeAudioFlow(input);
+  // This flow is no longer used. Returning a placeholder.
+  return Promise.resolve({ transcription: '' });
 }
 
 const transcribeAudioPrompt = ai.definePrompt({
@@ -43,7 +41,9 @@ const transcribeAudioFlow = ai.defineFlow(
     outputSchema: TranscribeAudioOutputSchema,
   },
   async input => {
-    const {output} = await transcribeAudioPrompt(input);
-    return output!;
+    // This flow is no longer used. Returning a placeholder.
+    return { transcription: '' };
   }
 );
+
+    
