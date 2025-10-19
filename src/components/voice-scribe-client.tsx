@@ -1,3 +1,4 @@
+
 "use client";
 
 import { transcribeWithHuggingFace } from "@/ai/flows/transcribe-with-hugging-face";
@@ -74,15 +75,16 @@ export const VoiceScribeClient: FC = () => {
 
       recognitionRef.current.onresult = (event: any) => {
         let interimTranscript = '';
-        finalTranscriptRef.current = event.results[0][0].transcript;
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
+        let finalTranscript = '';
+        for (let i = 0; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
-            finalTranscriptRef.current += event.results[i][0].transcript;
+            finalTranscript += event.results[i][0].transcript;
           } else {
             interimTranscript += event.results[i][0].transcript;
           }
         }
-        setRawTranscription(finalTranscriptRef.current + interimTranscript);
+        finalTranscriptRef.current = finalTranscript;
+        setRawTranscription(finalTranscript + interimTranscript);
       };
 
       recognitionRef.current.onerror = (event: any) => {
@@ -308,3 +310,5 @@ export const VoiceScribeClient: FC = () => {
     </div>
   );
 };
+
+    
