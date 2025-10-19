@@ -6,6 +6,7 @@ import { Mic, Square, Loader2, Play, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/header';
 import { transcribeWithHuggingFace } from '@/ai/flows/transcribe-with-hugging-face';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function Home() {
   const [isRecording, setIsRecording] = useState(false);
@@ -189,25 +190,29 @@ export default function Home() {
                   <CardHeader>
                     <CardTitle className="text-lg">Browser Transcription</CardTitle>
                   </CardHeader>
-                  <CardContent className="min-h-[100px] text-muted-foreground">
-                    {browserTranscription || "Live transcription will appear here..."}
+                  <CardContent className="h-[150px] text-muted-foreground">
+                    <ScrollArea className="h-full w-full rounded-md border p-4">
+                      {browserTranscription || "Live transcription will appear here..."}
+                    </ScrollArea>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg">AI Transcription</CardTitle>
                   </CardHeader>
-                  <CardContent className="min-h-[100px] text-foreground font-semibold">
-                    {isTranscribing && <div className="text-muted-foreground">Transcribing...</div>}
-                    {aiTranscription}
-                    {transcriptionError && (
-                       <div className="text-destructive flex flex-col items-center text-center gap-2 p-4 rounded-md border border-destructive/50 bg-destructive/10">
-                         <AlertTriangle className="w-8 h-8" />
-                         <h3 className="font-bold">Configuration Error</h3>
-                         <p className="text-sm font-normal">{transcriptionError}</p>
-                       </div>
-                    )}
-                    {!aiTranscription && !isTranscribing && !transcriptionError && <div className="text-muted-foreground font-normal">AI transcription result will appear here.</div>}
+                  <CardContent className="h-[150px] text-foreground font-semibold">
+                     <ScrollArea className="h-full w-full rounded-md border p-4">
+                      {isTranscribing && <div className="text-muted-foreground">Transcribing...</div>}
+                      {aiTranscription}
+                      {transcriptionError && (
+                         <div className="text-destructive flex flex-col items-center text-center gap-2 p-4 rounded-md border border-destructive/50 bg-destructive/10">
+                           <AlertTriangle className="w-8 h-8" />
+                           <h3 className="font-bold">Configuration Error</h3>
+                           <p className="text-sm font-normal">{transcriptionError}</p>
+                         </div>
+                      )}
+                      {!aiTranscription && !isTranscribing && !transcriptionError && <div className="text-muted-foreground font-normal">AI transcription result will appear here.</div>}
+                    </ScrollArea>
                   </CardContent>
                 </Card>
               </div>
