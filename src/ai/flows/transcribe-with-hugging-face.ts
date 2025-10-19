@@ -3,7 +3,7 @@
 /**
  * @fileOverview Transcribes audio using a specific Hugging Face model.
  *
- * - transcribeWithHuggingFace - A function that sends audio data to the Hugging Face Inference API.
+ * - transcribeWithHuggingFace - a function that sends audio data to the Hugging Face Inference API.
  * - TranscribeWithHuggingFaceInput - The input type for the function.
  * - TranscribeWithHuggingFaceOutput - The return type for the function.
  */
@@ -28,7 +28,7 @@ export type TranscribeWithHuggingFaceOutput = z.infer<
   typeof TranscribeWithHuggingFaceOutputSchema
 >;
 
-const MODEL_URL = 'https://api-inference.huggingface.co/models/openai/whisper-large-v3';
+const MODEL_URL = 'https://iyr9a23kqm3iv1xh.us-east-1.aws.endpoints.huggingface.cloud';
 
 export async function transcribeWithHuggingFace(
   input: TranscribeWithHuggingFaceInput
@@ -69,7 +69,12 @@ export async function transcribeWithHuggingFace(
      throw new Error(`Hugging Face model error: ${result.error}`);
   }
 
+  // The dedicated endpoint returns the transcription in a different format
+  const transcription = Array.isArray(result) && result[0] && result[0].generated_text
+    ? result[0].generated_text
+    : (result.text || '');
+
   return {
-    transcription: result.text || '',
+    transcription: transcription,
   };
 }

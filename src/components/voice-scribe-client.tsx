@@ -120,7 +120,7 @@ export const VoiceScribeClient: FC = () => {
         reader.onloadend = () => {
             const base64data = reader.result as string;
             setAudioDataUri(base64data);
-            setStatus("success");
+            setStatus("processing"); // Go to processing to show the initial transcription first
         };
 
         const finalFinalTranscript = finalTranscript.trim();
@@ -131,7 +131,7 @@ export const VoiceScribeClient: FC = () => {
       mediaRecorderRef.current.start();
       recognitionRef.current.start();
       setStatus("recording");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to get microphone access:", error);
       toast({
         variant: "destructive",
@@ -149,7 +149,7 @@ export const VoiceScribeClient: FC = () => {
     if (recognitionRef.current) {
         recognitionRef.current.stop();
     }
-    setStatus("processing");
+    // setStatus("processing"); // Status is set in onstop
   };
 
   const handlePlayTranscription = (text: string) => {
@@ -200,9 +200,9 @@ export const VoiceScribeClient: FC = () => {
           <div className="flex flex-col items-center gap-4 mt-6">
               <Button onClick={handleImproveTranscription} size="lg">
                   <Sparkles className="mr-2" />
-                  Transcribe with Whisper
+                  Transcribe with AI
               </Button>
-               <p className="text-sm text-muted-foreground">Compare the browser's transcription with a state-of-the-art model.</p>
+               <p className="text-sm text-muted-foreground">Improve the browser's transcription with a specialized AI model.</p>
           </div>
       )
   }
@@ -242,17 +242,39 @@ export const VoiceScribeClient: FC = () => {
         );
       case "processing":
         return (
-          <div className="text-center flex flex-col items-center gap-4">
-             <LoaderCircle size={64} className="text-primary animate-spin" />
-             <h2 className="text-2xl font-semibold font-headline">Processing...</h2>
-             <p className="text-muted-foreground">Finalizing your audio and transcription.</p>
-          </div>
+           <Card className="w-full max-w-2xl shadow-lg">
+            <CardHeader>
+              <CardTitle className="font-headline">Initial Transcription</CardTitle>
+              <CardDescription>
+                This is the transcription from your browser. You can now improve it with AI.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-muted-foreground">
+                    Browser Transcription
+                </label>
+                <Textarea
+                  readOnly
+                  value={transcription}
+                  className="h-40 text-base bg-background"
+                  aria-label="Transcription text"
+                />
+              </div>
+            </CardContent>
+            <CardFooter className="flex flex-col items-center justify-center gap-4">
+               {renderTranscribeButton()}
+               <Button variant="outline" onClick={handleReset}>
+                <RefreshCw size={16} className="mr-2" /> Record New
+              </Button>
+            </CardFooter>
+          </Card>
         );
       case "improving":
         return (
           <div className="text-center flex flex-col items-center gap-4">
              <LoaderCircle size={64} className="text-primary animate-spin" />
-             <h2 className="text-2xl font-semibold font-headline">Transcribing with Whisper...</h2>
+             <h2 className="text-2xl font-semibold font-headline">Transcribing with AI...</h2>
              <p className="text-muted-foreground">Using the advanced model to refine your transcription.</p>
           </div>
         );
@@ -262,7 +284,7 @@ export const VoiceScribeClient: FC = () => {
             <CardHeader>
               <CardTitle className="font-headline">Your Transcription</CardTitle>
               <CardDescription>
-                Review your transcription, play back the audio, or improve it with AI.
+                Review your transcription, play back the audio, or start over.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -271,7 +293,7 @@ export const VoiceScribeClient: FC = () => {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-muted-foreground">
-                    Transcription
+                    AI Transcription
                 </label>
                 <Textarea
                   readOnly
@@ -286,10 +308,6 @@ export const VoiceScribeClient: FC = () => {
                 <RefreshCw size={16} className="mr-2" /> Record New
               </Button>
               <div className="flex items-center gap-2">
-                 <Button onClick={handleImproveTranscription}>
-                    <Sparkles className="mr-2" />
-                    Improve with Whisper
-                </Button>
                 <Button variant="ghost" size="icon" onClick={() => handlePlayTranscription(transcription)} aria-label="Play transcription">
                   <Play />
                 </Button>
