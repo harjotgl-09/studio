@@ -2,11 +2,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mic, Square, Loader2, Play, AlertTriangle, Volume2 } from 'lucide-react';
+import { Mic, Square, Loader2, Play, AlertTriangle, Volume2, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/header';
 import { transcribeWithHuggingFace } from '@/ai/flows/transcribe-with-hugging-face';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { firebaseConfig } from '@/firebase/config';
 
 export default function Home() {
   const [isRecording, setIsRecording] = useState(false);
@@ -278,6 +279,16 @@ export default function Home() {
                   </CardContent>
                 </Card>
               </div>
+
+              {firebaseConfig?.projectId && (
+                <div className="w-full flex items-center justify-center gap-2 p-3 bg-green-500/10 text-green-400 rounded-lg border border-green-500/20">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <p className="text-sm font-medium">
+                    Connected to Firebase project: <span className="font-bold">{firebaseConfig.projectId}</span>
+                  </p>
+                </div>
+              )}
+
             </CardContent>
           </Card>
         </div>
