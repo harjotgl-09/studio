@@ -26,12 +26,15 @@ export function FirebaseProvider({ children }) {
     if (isFirebaseInitialized) {
       return;
     }
-    const { app: nextApp, auth: nextAuth, firestore: nextFirestore } = initializeFirebase();
-    setApp(nextApp);
-    setAuth(nextAuth);
-    setFirestore(nextFirestore);
-    setIsFirebaseInitialized(true);
-  }, []);
+    const firebaseInstances = initializeFirebase();
+    if (firebaseInstances) {
+      const { app: nextApp, auth: nextAuth, firestore: nextFirestore } = firebaseInstances;
+      setApp(nextApp);
+      setAuth(nextAuth);
+      setFirestore(nextFirestore);
+      setIsFirebaseInitialized(true);
+    }
+  }, [isFirebaseInitialized]);
 
   const contextValue = useMemo(
     () => ({
